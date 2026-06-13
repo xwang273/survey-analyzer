@@ -346,6 +346,51 @@
       font-style: italic;
     }
 
+    /* Group summary chips */
+    #group-summary-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .summary-chip {
+      display: flex;
+      flex-direction: column;
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      border: 1.5px solid #4361ee;
+      background: #eef1ff;
+      min-width: 110px;
+    }
+
+    .summary-chip-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.2rem;
+    }
+
+    .summary-chip-avg {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #4361ee;
+    }
+
+    .summary-chip-empty .summary-chip-avg {
+      color: #adb5bd;
+      font-size: 0.95rem;
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    #copy-summary-btn.copied {
+      background: #2dc653;
+      color: #fff;
+      border-color: #2dc653;
+    }
+
     /* Error banner */
     #error-banner {
       position: fixed;
@@ -451,6 +496,15 @@
       </div>
     </div>
     <div id="groups-container"></div>
+  </div>
+
+  <!-- Panel 3b: Group Summary -->
+  <div class="card" id="group-summary-panel" hidden>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h2 style="margin:0">Group Averages</h2>
+      <button class="btn btn-outline" id="copy-summary-btn">Copy</button>
+    </div>
+    <div id="group-summary-chips"></div>
   </div>
 
   <!-- Panel 4: Results -->
@@ -726,6 +780,7 @@
     document.getElementById("groups-panel").hidden = false;
     groups.forEach(g => appendGroupCard(g));
     recalculateAllGroupAverages();
+    updateGroupSummary();
   }
 
   // ── Append a single group card ──────────────────────────────────────────────
@@ -745,14 +800,21 @@
     nameInput.className   = "group-name-input";
     nameInput.value       = group.name;
     nameInput.placeholder = "Group name";
-    nameInput.addEventListener("input", () => { group.name = nameInput.value; });
+    nameInput.addEventListener("input", () => { group.name = nameInput.value; updateGroupSummary(); });
 
     const removeBtn = document.createElement("button");
     removeBtn.className   = "btn-danger-sm";
     removeBtn.textContent = "Remove";
     removeBtn.addEventListener("click", () => {
+      // Release all rows owned by this group so other groups can claim them
+      group.selected.forEach(rowNum => {
+        groups.forEach(other => {
+          if (other.id !== group.id) setRowAvailability(rowNum, other.id, true);
+        });
+      });
       groups = groups.filter(g => g.id !== group.id);
       card.remove();
+      updateGroupSummary();
     });
 
     header.appendChild(nameInput);
@@ -861,11 +923,61 @@
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     el.textContent = avg.toFixed(3);
     el.classList.remove("group-avg-empty");
+    updateGroupSummary();
   }
 
   function recalculateAllGroupAverages() {
     groups.forEach(g => updateGroupAvgDisplay(g));
   }
+
+  function groupAvgValue(group) {
+    const values = [...group.selected]
+      .map(rowNum => currentRows.find(r => r.row === rowNum)?.value)
+      .filter(v => v !== undefined && !isNaN(v));
+    return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(3) : null;
+  }
+
+  function updateGroupSummary() {
+    const panel  = document.getElementById("group-summary-panel");
+    const chips  = document.getElementById("group-summary-chips");
+    if (!panel || !chips) return;
+
+    if (groups.length === 0) { panel.hidden = true; return; }
+
+    chips.innerHTML = "";
+    groups.forEach(g => {
+      const avg  = groupAvgValue(g);
+      const chip = document.createElement("div");
+      chip.className = "summary-chip" + (avg === null ? " summary-chip-empty" : "");
+
+      const namEl = document.createElement("div");
+      namEl.className   = "summary-chip-name";
+      namEl.textContent = g.name || `Group ${g.id}`;
+
+      const avgEl = document.createElement("div");
+      avgEl.className   = "summary-chip-avg";
+      avgEl.textContent = avg !== null ? avg : "—";
+
+      chip.appendChild(namEl);
+      chip.appendChild(avgEl);
+      chips.appendChild(chip);
+    });
+
+    panel.hidden = false;
+  }
+
+  document.getElementById("copy-summary-btn").addEventListener("click", () => {
+    const lines = groups.map(g => {
+      const avg = groupAvgValue(g) ?? "—";
+      return `${g.name || `Group ${g.id}`}\t${avg}`;
+    });
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      const btn = document.getElementById("copy-summary-btn");
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    });
+  });
 
   // Grey out or restore a row label in a specific group card
   function setRowAvailability(rowNum, groupId, available) {
