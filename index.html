@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 2rem 1rem 4rem;
+      color: #212529;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      margin-bottom: 1.75rem;
+      color: #1a1a2e;
+      letter-spacing: -0.01em;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      margin: 0 0 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #495057;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Scale config */
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .config-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #495057;
+    }
+
+    .config-grid input {
+      padding: 0.45rem 0.6rem;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+
+    .config-grid input:focus {
+      outline: none;
+      border-color: #4361ee;
+      box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+    }
+
+    /* Upload */
+    .upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    #file-input { font-size: 0.9rem; cursor: pointer; }
+
+    #preview {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+      margin-top: 0.25rem;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.25rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary { background: #4361ee; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #3451d1; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-success { background: #2dc653; color: #fff; }
+    .btn-success:hover { background: #25a844; }
+
+    .btn-outline {
+      background: #fff;
+      color: #4361ee;
+      border: 1.5px solid #4361ee;
+    }
+    .btn-outline:hover { background: #eef1ff; }
+
+    .btn-danger-sm {
+      background: none;
+      border: 1px solid #dc3545;
+      color: #dc3545;
+      padding: 0.25rem 0.65rem;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-danger-sm:hover { background: #fff0f0; }
+
+    /* Results table */
+    .scale-label-row {
+      display: flex;
+      gap: 0;
+      font-size: 0.8rem;
+      color: #6c757d;
+      font-family: monospace;
+      margin-bottom: 0.5rem;
+    }
+
+    .scale-label-row span {
+      font-weight: 600;
+      margin-right: 0.35rem;
+      color: #495057;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #dee2e6;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #495057;
+      text-align: left;
+    }
+
+    tbody tr:hover { background: #f8f9fa; }
+
+    tfoot td {
+      font-weight: 700;
+      background: #eef1ff;
+      color: #4361ee;
+    }
+
+    /* Radio dot visuals */
+    .radio-visual {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .radio-dot {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid #6c757d;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .radio-dot.selected { background: #212529; border-color: #212529; }
+
+    .radio-label {
+      font-size: 0.65rem;
+      color: #6c757d;
+      font-family: monospace;
+      font-weight: 600;
+    }
+
+    .value-input {
+      width: 90px;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid #ced4da;
+      border-radius: 5px;
+      font-size: 0.9rem;
+      transition: border-color 0.15s;
+    }
+
+    .value-input:focus {
+      outline: none;
+      border-color: #4361ee;
+      box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+    }
+
+    .value-input.error { border-color: #dc3545 !important; }
+
+    .results-actions {
+      margin-top: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* ── Groups ─────────────────────────────────────────────────────────────── */
+    .groups-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .groups-header h2 { margin: 0; }
+
+    #groups-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .group-card {
+      border: 1.5px solid #dee2e6;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      background: #fafbff;
+    }
+
+    .group-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .group-name-input {
+      flex: 1;
+      padding: 0.35rem 0.6rem;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #212529;
+      transition: border-color 0.15s;
+    }
+
+    .group-name-input:focus {
+      outline: none;
+      border-color: #4361ee;
+      box-shadow: 0 0 0 3px rgba(67,97,238,0.15);
+    }
+
+    .group-rows-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .group-row-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #dee2e6;
+      background: #fff;
+      transition: background 0.12s, border-color 0.12s;
+      user-select: none;
+    }
+
+    .group-row-item:hover { background: #eef1ff; border-color: #4361ee; }
+
+    .group-row-item.unavailable {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+      background: #f8f9fa;
+    }
+
+    .group-row-item input[type="checkbox"] {
+      accent-color: #4361ee;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .group-row-val {
+      color: #6c757d;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
+    .group-avg-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #495057;
+      border-top: 1px solid #dee2e6;
+      padding-top: 0.65rem;
+      margin-top: 0.25rem;
+    }
+
+    .group-avg-row strong {
+      font-size: 1.1rem;
+      color: #4361ee;
+    }
+
+    .group-avg-empty {
+      color: #adb5bd;
+      font-style: italic;
+    }
+
+    /* Error banner */
+    #error-banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #dc3545;
+      color: #fff;
+      padding: 0.85rem 1.5rem;
+      text-align: center;
+      font-weight: 500;
+      font-size: 0.95rem;
+      z-index: 1000;
+      display: none;
+    }
+
+    #error-banner button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-left: 1rem;
+      line-height: 1;
+    }
+
+    /* Spinner */
+    #spinner {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 900;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    #spinner p { color: #4361ee; font-weight: 600; margin: 0; }
+
+    .spinner-circle {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #dee2e6;
+      border-top-color: #4361ee;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="error-banner">
+  <span id="error-text"></span>
+  <button onclick="hideError()" aria-label="Dismiss">&times;</button>
+</div>
+
+<div id="spinner">
+  <div class="spinner-circle"></div>
+  <p>Detecting radio buttons...</p>
+</div>
+
+<div class="container">
+  <h1>Survey Analyzer</h1>
+
+  <!-- Panel 1: Scale Config -->
+  <div class="card">
+    <h2>Scale Configuration</h2>
+    <div class="config-grid">
+      <label>
+        Min Value
+        <input id="min-val" type="number" value="1" step="any">
+      </label>
+      <label>
+        Max Value
+        <input id="max-val" type="number" value="5" step="any">
+      </label>
+      <label>
+        Number of Options
+        <input id="num-options" type="number" value="5" min="1" step="1">
+      </label>
+    </div>
+  </div>
+
+  <!-- Panel 2: Upload -->
+  <div class="card">
+    <h2>Upload Survey Image</h2>
+    <div class="upload-area">
+      <input type="file" id="file-input" accept="image/*">
+      <img id="preview" hidden alt="Survey preview">
+      <button class="btn btn-primary" id="process-btn" disabled>Process Image</button>
+    </div>
+  </div>
+
+  <!-- Panel 3: Groups -->
+  <div class="card" id="groups-panel" hidden>
+    <div class="groups-header">
+      <h2>Groups</h2>
+      <div style="display:flex;gap:0.6rem">
+        <button class="btn btn-outline" id="add-group-btn">+ Add Group</button>
+        <button class="btn btn-success" id="export-groups-btn">Export Groups CSV</button>
+      </div>
+    </div>
+    <div id="groups-container"></div>
+  </div>
+
+  <!-- Panel 4: Results -->
+  <div class="card" id="results-panel" hidden>
+    <h2>Results</h2>
+    <div id="scale-label-row" class="scale-label-row"></div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:70px">Row</th>
+          <th>Detected Selection</th>
+          <th style="width:130px">Value (editable)</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Average (all rows)</td>
+          <td id="avg-display">—</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="results-actions">
+      <button class="btn btn-success" id="export-btn">Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentRows = [];
+  let currentScaleLabels = [];
+  let groups = [];
+  let groupIdCounter = 0;
+  let errorTimer = null;
+
+  // ── File input ──────────────────────────────────────────────────────────────
+  document.getElementById("file-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = document.getElementById("preview");
+    preview.src = URL.createObjectURL(file);
+    preview.hidden = false;
+    document.getElementById("process-btn").disabled = false;
+  });
+
+  // ── Process ─────────────────────────────────────────────────────────────────
+  document.getElementById("process-btn").addEventListener("click", async () => {
+    const file = document.getElementById("file-input").files[0];
+    if (!file) return;
+
+    const minVal  = parseFloat(document.getElementById("min-val").value);
+    const maxVal  = parseFloat(document.getElementById("max-val").value);
+    const numOpts = parseInt(document.getElementById("num-options").value, 10);
+
+    if (isNaN(minVal) || isNaN(maxVal) || isNaN(numOpts) || numOpts < 1) {
+      showError("Invalid scale configuration — check Min, Max, and Number of Options.");
+      return;
+    }
+    if (minVal > maxVal) {
+      showError("Min value must be less than or equal to Max value.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("min_val", minVal);
+    formData.append("max_val", maxVal);
+    formData.append("num_options", numOpts);
+
+    showSpinner(true);
+    hideError();
+
+    try {
+      const resp = await fetch("/process", { method: "POST", body: formData });
+      const data = await resp.json();
+
+      if (!resp.ok || data.error) {
+        showError(data.error || "Processing failed.");
+        return;
+      }
+
+      currentRows        = data.rows.map(r => ({ ...r }));
+      currentScaleLabels = data.scale_labels;
+      renderResults();
+      rebuildAllGroupCards();
+
+    } catch (err) {
+      showError("Network error: " + err.message);
+    } finally {
+      showSpinner(false);
+    }
+  });
+
+  // ── Export ──────────────────────────────────────────────────────────────────
+  document.getElementById("export-btn").addEventListener("click", async () => {
+    const inputs = document.querySelectorAll(".value-input");
+    let hasEmpty = false;
+    inputs.forEach(inp => {
+      if (inp.value.trim() === "" || isNaN(parseFloat(inp.value))) {
+        inp.classList.add("error");
+        hasEmpty = true;
+      } else {
+        inp.classList.remove("error");
+      }
+    });
+
+    if (hasEmpty) {
+      showError("All value fields must be filled before exporting.");
+      return;
+    }
+
+    hideError();
+
+    try {
+      const resp = await fetch("/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: currentRows, scale_labels: currentScaleLabels }),
+      });
+
+      if (!resp.ok) {
+        let err = { error: "Export failed." };
+        try { err = await resp.json(); } catch (_) {}
+        showError(err.error || "Export failed.");
+        return;
+      }
+
+      const blob = await resp.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = "survey_results.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      showError("Network error: " + err.message);
+    }
+  });
+
+  // ── Add Group ───────────────────────────────────────────────────────────────
+  document.getElementById("add-group-btn").addEventListener("click", () => {
+    const id = ++groupIdCounter;
+    groups.push({ id, name: `Group ${id}`, selected: new Set() });
+    appendGroupCard(groups[groups.length - 1]);
+  });
+
+  // ── Export Groups CSV ────────────────────────────────────────────────────────
+  document.getElementById("export-groups-btn").addEventListener("click", () => {
+    if (groups.length === 0) {
+      showError("No groups to export. Add at least one group first.");
+      return;
+    }
+
+    const rows = ["Group,Row,Value"];
+
+    groups.forEach(group => {
+      const name = group.name || `Group ${group.id}`;
+      const selected = [...group.selected].sort((a, b) => a - b);
+
+      if (selected.length === 0) {
+        rows.push(`${csvCell(name)},,(no rows selected)`);
+        rows.push(`${csvCell(name + " Average")},,—`);
+      } else {
+        const values = [];
+        selected.forEach(rowNum => {
+          const r = currentRows.find(row => row.row === rowNum);
+          if (r) {
+            rows.push(`${csvCell(name)},${r.row},${r.value}`);
+            if (!isNaN(r.value)) values.push(r.value);
+          }
+        });
+        const avg = values.length
+          ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(3)
+          : "—";
+        rows.push(`${csvCell(name + " Average")},,${avg}`);
+      }
+
+      rows.push(""); // blank line between groups
+    });
+
+    const csv  = rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "survey_groups.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  function csvCell(val) {
+    // Wrap in quotes if the value contains a comma, quote, or newline
+    const s = String(val);
+    return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  // ── Render Results ──────────────────────────────────────────────────────────
+  function renderResults() {
+    const labelRow = document.getElementById("scale-label-row");
+    labelRow.innerHTML = "<span>Scale:</span> " +
+      currentScaleLabels.map(l =>
+        `<span style="margin-right:1.1rem;font-family:monospace;font-weight:600;color:#4361ee">${formatNum(l)}</span>`
+      ).join("");
+
+    const tbody = document.getElementById("results-body");
+    tbody.innerHTML = "";
+
+    currentRows.forEach((row, idx) => {
+      const tr = document.createElement("tr");
+
+      const tdRow = document.createElement("td");
+      tdRow.textContent = row.row;
+
+      const tdVisual = document.createElement("td");
+      const visualDiv = document.createElement("div");
+      visualDiv.className = "radio-visual";
+      currentScaleLabels.forEach((label, posIdx) => {
+        const grp = document.createElement("div");
+        grp.className = "radio-group";
+
+        const dot = document.createElement("div");
+        dot.className = "radio-dot" + (posIdx === row.position ? " selected" : "");
+        dot.title = `Option ${posIdx + 1}: ${formatNum(label)}`;
+
+        const lbl = document.createElement("div");
+        lbl.className = "radio-label";
+        lbl.textContent = formatNum(label);
+
+        grp.appendChild(dot);
+        grp.appendChild(lbl);
+        visualDiv.appendChild(grp);
+      });
+      tdVisual.appendChild(visualDiv);
+
+      const tdValue = document.createElement("td");
+      const input   = document.createElement("input");
+      input.type        = "number";
+      input.className   = "value-input";
+      input.step        = "any";
+      input.value       = row.value;
+      input.dataset.idx = idx;
+
+      input.addEventListener("input", (e) => {
+        input.classList.remove("error");
+        const v = parseFloat(e.target.value);
+        if (!isNaN(v)) currentRows[idx].value = v;
+        recalculateAverage();
+        recalculateAllGroupAverages();
+        refreshGroupRowLabels();   // update "(value)" badges in group cards
+      });
+
+      tdValue.appendChild(input);
+      tr.appendChild(tdRow);
+      tr.appendChild(tdVisual);
+      tr.appendChild(tdValue);
+      tbody.appendChild(tr);
+    });
+
+    recalculateAverage();
+    document.getElementById("results-panel").hidden = false;
+    document.getElementById("results-panel").scrollIntoView({ behavior: "smooth" });
+  }
+
+  // ── Rebuild all group cards (called after every re-process) ────────────────
+  function rebuildAllGroupCards() {
+    const container = document.getElementById("groups-container");
+    container.innerHTML = "";
+    document.getElementById("groups-panel").hidden = false;
+    groups.forEach(g => appendGroupCard(g));
+    recalculateAllGroupAverages();
+  }
+
+  // ── Append a single group card ──────────────────────────────────────────────
+  function appendGroupCard(group) {
+    const container = document.getElementById("groups-container");
+
+    const card = document.createElement("div");
+    card.className = "group-card";
+    card.id = `group-card-${group.id}`;
+
+    // Header: name input + remove button
+    const header = document.createElement("div");
+    header.className = "group-card-header";
+
+    const nameInput = document.createElement("input");
+    nameInput.type        = "text";
+    nameInput.className   = "group-name-input";
+    nameInput.value       = group.name;
+    nameInput.placeholder = "Group name";
+    nameInput.addEventListener("input", () => { group.name = nameInput.value; });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className   = "btn-danger-sm";
+    removeBtn.textContent = "Remove";
+    removeBtn.addEventListener("click", () => {
+      groups = groups.filter(g => g.id !== group.id);
+      card.remove();
+    });
+
+    header.appendChild(nameInput);
+    header.appendChild(removeBtn);
+
+    // Row checkboxes
+    const rowsList = document.createElement("div");
+    rowsList.className  = "group-rows-list";
+    rowsList.id         = `group-rows-${group.id}`;
+
+    currentRows.forEach((row) => {
+      const label = document.createElement("label");
+      label.className       = "group-row-item";
+      label.dataset.rowNum  = row.row;
+
+      const cb = document.createElement("input");
+      cb.type           = "checkbox";
+      cb.dataset.rowNum = row.row;
+      cb.checked        = group.selected.has(row.row);
+
+      // Grey out if already owned by another group
+      const takenByOther = groups.some(g => g.id !== group.id && g.selected.has(row.row));
+      if (takenByOther) label.classList.add("unavailable");
+
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          // Claim: grey out this row in every other group
+          groups.forEach(other => {
+            if (other.id === group.id) return;
+            other.selected.delete(row.row);
+            setRowAvailability(row.row, other.id, false);
+            updateGroupAvgDisplay(other);
+          });
+          group.selected.add(row.row);
+        } else {
+          // Release: make this row available in all other groups
+          group.selected.delete(row.row);
+          groups.forEach(other => {
+            if (other.id === group.id) return;
+            setRowAvailability(row.row, other.id, true);
+          });
+        }
+        updateGroupAvgDisplay(group);
+      });
+
+      const rowNum = document.createElement("span");
+      rowNum.textContent = `Row ${row.row}`;
+
+      const valBadge = document.createElement("span");
+      valBadge.className      = "group-row-val";
+      valBadge.dataset.rowNum = row.row;
+      valBadge.textContent    = `(${formatNum(row.value)})`;
+
+      label.appendChild(cb);
+      label.appendChild(rowNum);
+      label.appendChild(valBadge);
+      rowsList.appendChild(label);
+    });
+
+    // Average display
+    const avgRow = document.createElement("div");
+    avgRow.className = "group-avg-row";
+    avgRow.id        = `group-avg-row-${group.id}`;
+    avgRow.innerHTML = `Average: <strong id="group-avg-${group.id}" class="group-avg-empty">select rows above</strong>`;
+
+    card.appendChild(header);
+    card.appendChild(rowsList);
+    card.appendChild(avgRow);
+    container.appendChild(card);
+  }
+
+  // ── Average calculations ────────────────────────────────────────────────────
+  function recalculateAverage() {
+    const inputs = document.querySelectorAll(".value-input");
+    const values = [];
+    inputs.forEach(inp => {
+      const v = parseFloat(inp.value);
+      if (!isNaN(v)) values.push(v);
+    });
+    const avgDisplay = document.getElementById("avg-display");
+    if (values.length === 0) {
+      avgDisplay.textContent = "—";
+    } else {
+      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+      avgDisplay.textContent = avg.toFixed(3);
+    }
+  }
+
+  function updateGroupAvgDisplay(group) {
+    const el = document.getElementById(`group-avg-${group.id}`);
+    if (!el) return;
+    const selected = [...group.selected];
+    if (selected.length === 0) {
+      el.textContent = "select rows above";
+      el.classList.add("group-avg-empty");
+      return;
+    }
+    const values = selected
+      .map(rowNum => currentRows.find(r => r.row === rowNum)?.value)
+      .filter(v => v !== undefined && !isNaN(v));
+    if (values.length === 0) {
+      el.textContent = "—";
+      el.classList.add("group-avg-empty");
+      return;
+    }
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    el.textContent = avg.toFixed(3);
+    el.classList.remove("group-avg-empty");
+  }
+
+  function recalculateAllGroupAverages() {
+    groups.forEach(g => updateGroupAvgDisplay(g));
+  }
+
+  // Grey out or restore a row label in a specific group card
+  function setRowAvailability(rowNum, groupId, available) {
+    const card = document.getElementById(`group-card-${groupId}`);
+    if (!card) return;
+    const label = card.querySelector(`label[data-row-num="${rowNum}"]`);
+    if (!label) return;
+    if (available) {
+      label.classList.remove("unavailable");
+    } else {
+      label.classList.add("unavailable");
+    }
+  }
+
+  // Refresh the "(value)" badges in all group cards when values are edited
+  function refreshGroupRowLabels() {
+    document.querySelectorAll(".group-row-val[data-row-num]").forEach(badge => {
+      const rowNum = parseInt(badge.dataset.rowNum, 10);
+      const row = currentRows.find(r => r.row === rowNum);
+      badge.textContent = row !== undefined ? `(${formatNum(row.value)})` : "";
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function formatNum(n) {
+    return Number.isInteger(n) ? String(n) : parseFloat(n.toFixed(2)).toString();
+  }
+
+  function showSpinner(show) {
+    document.getElementById("spinner").style.display = show ? "flex" : "none";
+  }
+
+  function showError(msg) {
+    document.getElementById("error-text").textContent = msg;
+    document.getElementById("error-banner").style.display = "block";
+    clearTimeout(errorTimer);
+    errorTimer = setTimeout(hideError, 8000);
+  }
+
+  function hideError() {
+    document.getElementById("error-banner").style.display = "none";
+    clearTimeout(errorTimer);
+  }
+</script>
+</body>
+</html>
