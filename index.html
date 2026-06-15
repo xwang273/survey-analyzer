@@ -178,6 +178,22 @@
       color: #4361ee;
     }
 
+    .btn-copy-avg {
+      margin-left: 0.6rem;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #fff;
+      color: #4361ee;
+      border: 1.5px solid #4361ee;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-copy-avg:hover { background: #eef1ff; }
+    .btn-copy-avg.copied { background: #2dc653; color: #fff; border-color: #2dc653; }
+
     /* Radio dot visuals */
     .radio-visual {
       display: flex;
@@ -523,7 +539,10 @@
       <tfoot>
         <tr>
           <td colspan="2">Average (all rows)</td>
-          <td id="avg-display">—</td>
+          <td>
+            <span id="avg-display">—</span>
+            <button id="copy-avg-btn" class="btn-copy-avg" title="Copy average">Copy</button>
+          </td>
         </tr>
       </tfoot>
     </table>
@@ -887,6 +906,17 @@
   }
 
   // ── Average calculations ────────────────────────────────────────────────────
+  document.getElementById("copy-avg-btn").addEventListener("click", () => {
+    const val = document.getElementById("avg-display").textContent;
+    if (!val || val === "—") return;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = document.getElementById("copy-avg-btn");
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    });
+  });
+
   function recalculateAverage() {
     const inputs = document.querySelectorAll(".value-input");
     const values = [];
