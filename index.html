@@ -968,7 +968,7 @@
 
   document.getElementById("copy-summary-btn").addEventListener("click", () => {
     const lines = groups.map(g => groupAvgValue(g) ?? "—");
-    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+    navigator.clipboard.writeText(lines.join("\t")).then(() => {
       const btn = document.getElementById("copy-summary-btn");
       btn.textContent = "Copied!";
       btn.classList.add("copied");
